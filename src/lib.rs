@@ -75,7 +75,7 @@ pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
         match path_file_credentials() {
             Some(path_src) => match std::fs::copy(path_src, &path_dst) {
                 Ok(..) => Ok(Success::Saved(profile)),
-                Err(e) => Err(Error::CredentialsCannotWrite(e)),
+                Err(e) => Err(Error::ProfileCannotWrite(e)),
             }
             None => Err(Error::CredentialsNoPath),
         }
@@ -84,9 +84,17 @@ pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
 
 
 pub fn profile_load(name: String) -> Result<Success, Error> {
-    let dir_profile = ensure_storage()?;
+    let mut path_src = ensure_storage()?;
+    let profile = Profile::new(name);
+    path_src.push(profile.filename());
 
-    todo!()
+    match path_file_credentials() {
+        Some(path_dst) => match std::fs::copy(path_src, &path_dst) {
+            Ok(..) => Ok(Success::Loaded(profile)),
+            Err(e) => Err(Error::CredentialsCannotWrite(e)),
+        }
+        None => Err(Error::CredentialsNoPath),
+    }
 }
 
 
