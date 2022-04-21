@@ -1,3 +1,4 @@
+use std::process::exit;
 use clap::Parser;
 use cargo_user::*;
 
@@ -58,7 +59,7 @@ enum Op {
         /// Do not prompt for confirmation; delete immediately.
         #[clap(long)]
         noconfirm: bool,
-        /// The name of the profile to be deleted.
+        /// One or more names of profiles to be deleted.
         #[clap(required(true))]
         profile: Vec<String>,
     },
@@ -78,10 +79,20 @@ fn main() {
 
     dbg!(&operation);
 
-    match operation.unwrap() {
+    let status = match operation.unwrap() {
         Op::Save { force, name } => profile_save(name, force),
         Op::Load { profile } => profile_load(profile),
         Op::Clear => profile_clear(),
         Op::Delete { noconfirm, profile } => profile_remove(profile, !noconfirm),
+    };
+
+    match status {
+        Ok(success) => {
+            println!("{success:?}");
+        }
+        Err(error) => {
+            println!("Error: {error:?}");
+            exit(1);
+        }
     }
 }
