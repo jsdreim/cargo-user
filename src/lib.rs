@@ -21,6 +21,7 @@ pub enum Error {
     CredentialsNotFound,
     CredentialsCannotRead(std::io::Error),
     CredentialsCannotWrite(std::io::Error),
+    CredentialsCannotClear(std::io::Error),
 
     ProfileExists(Profile),
     ProfileNoPath,
@@ -53,7 +54,13 @@ pub fn ensure_storage() -> Result<PathBuf, Error> {
 
 
 pub fn profile_clear() -> Result<Success, Error> {
-    todo!()
+    match path_file_credentials() {
+        Some(path_cred) => match std::fs::remove_file(path_cred) {
+            Ok(..) => Ok(Success::Cleared),
+            Err(e) => Err(Error::CredentialsCannotClear(e)),
+        }
+        None => Err(Error::CredentialsNoPath),
+    }
 }
 
 
