@@ -19,6 +19,8 @@ impl Profile {
         format!("credentials-{}", self.name)
     }
 
+    pub const fn name(&self) -> &String { &self.name }
+
     pub fn path(&self) -> Option<PathBuf> {
         let mut path = path_dir_storage()?;
         path.push(self.filename());

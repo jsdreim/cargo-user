@@ -2,7 +2,7 @@ pub mod dirs;
 pub mod profile;
 
 use std::{fs::create_dir_all, path::PathBuf};
-use dirs::path_dir_storage;
+use dirs::{path_dir_storage, path_file_credentials};
 pub use profile::Profile;
 
 
@@ -17,6 +17,17 @@ pub enum Success {
 
 #[derive(Debug)]
 pub enum Error {
+    CredentialsNoPath,
+    CredentialsNotFound,
+    CredentialsCannotRead(std::io::Error),
+    CredentialsCannotWrite(std::io::Error),
+
+    ProfileExists(Profile),
+    ProfileNoPath,
+    ProfileNotFound,
+    ProfileCannotRead(std::io::Error),
+    ProfileCannotWrite(std::io::Error),
+
     StorageNoPath,
     StorageNotDir,
     StorageCannotCreate(std::io::Error),
@@ -47,9 +58,21 @@ pub fn profile_clear() -> Result<Success, Error> {
 
 
 pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
-    let dir_profile = ensure_storage()?;
+    let mut path_dst = ensure_storage()?;
+    let profile = Profile::new(name);
+    path_dst.push(profile.filename());
 
-    todo!()
+    if !clobber && path_dst.exists() {
+        Err(Error::ProfileExists(profile))
+    } else {
+        match path_file_credentials() {
+            Some(path_src) => match std::fs::copy(path_src, &path_dst) {
+                Ok(..) => Ok(Success::Saved(profile)),
+                Err(e) => Err(Error::CredentialsCannotWrite(e)),
+            }
+            None => Err(Error::CredentialsNoPath),
+        }
+    }
 }
 
 
