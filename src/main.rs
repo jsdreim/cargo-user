@@ -34,6 +34,9 @@ enum Cargo {
 /// Save and load Cargo credentials with named profiles.
 #[derive(Debug, Parser)]
 enum Op {
+    /// Print the names of all available profiles.
+    #[clap(alias = "ls")]
+    List,
     /// Store the current Cargo credentials as a named profile.
     #[clap(alias = "store")]
     Save {
@@ -69,6 +72,7 @@ fn main() {
     let Cargo::User { operation } = Cargo::parse();
 
     let status = match operation {
+        Op::List => profile_list(),
         Op::Save { force, name } => profile_save(name, force),
         Op::Load { profile } => profile_load(profile),
         Op::Clear => profile_clear(),
@@ -77,6 +81,21 @@ fn main() {
 
     match status {
         Ok(success) => match success {
+            Success::List(mut profiles) => {
+                if !profiles.is_empty() {
+                    profiles.sort_unstable();
+
+                    for profile in profiles {
+                        println!("{}", profile.name());
+                    }
+                } else {
+                    //  NOTE: `eprintln` here, not `println`, in case stdout is
+                    //      being read by a machine that is not paying attention
+                    //      to exit status. No profiles should mean no output.
+                    eprintln!("No profiles found.");
+                    exit(1);
+                }
+            }
             Success::Cleared => println!("Cleared Cargo credentials."),
             Success::Saved(p) => println!("Saved profile {:?}.", p.name()),
             Success::Loaded(p) => println!("Loaded profile {:?}.", p.name()),

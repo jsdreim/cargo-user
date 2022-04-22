@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use crate::dirs::path_dir_storage;
 
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Profile {
     name: String,
 }

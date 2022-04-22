@@ -37,6 +37,24 @@ pub fn profile_clear() -> Result<Success, Error> {
 }
 
 
+pub fn profile_list() -> Result<Success, Error> {
+    let dir_profile = ensure_storage()?;
+    let mut profiles = Vec::new();
+
+    if let Ok(dir) = dir_profile.read_dir() {
+        for entry in dir {
+            if let Ok(sub) = entry {
+                if let Some(profile) = Profile::from_path(sub.path()) {
+                    profiles.push(profile);
+                }
+            }
+        }
+    }
+
+    Ok(Success::List(profiles))
+}
+
+
 pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
     let mut path_dst = ensure_storage()?;
     let profile = Profile::new(name);

@@ -32,9 +32,10 @@ impl From<ErrorStorage> for Error {
 
 #[derive(Debug)]
 pub enum Success {
-    Cleared,
+    List(Vec<Profile>),
     Saved(Profile),
     Loaded(Profile),
+    Cleared,
     Removed {
         removed: Vec<Profile>,
         errors: Vec<Error>,
