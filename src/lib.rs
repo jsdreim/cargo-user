@@ -50,7 +50,7 @@ pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
 
             Some(path_src) => match std::fs::copy(path_src, &path_dst) {
                 Ok(..) => Ok(Success::Saved(profile)),
-                Err(e) => Err(Error::CannotSave(e)),
+                Err(e) => Err(Error::CannotSave(profile, e)),
             }
 
             None => Err(Error::CredentialsNoPath),
@@ -67,21 +67,17 @@ pub fn profile_load(name: String) -> Result<Success, Error> {
     match path_file_credentials() {
         Some(path_dst) => match std::fs::copy(path_src, &path_dst) {
             Ok(..) => Ok(Success::Loaded(profile)),
-            Err(e) => Err(Error::CannotLoad(e)),
+            Err(e) => Err(Error::CannotLoad(profile, e)),
         }
         None => Err(Error::CredentialsNoPath),
     }
 }
 
 
-pub fn profile_remove(names: Vec<String>, confirm: bool) -> Result<Success, Error> {
+pub fn profile_remove(names: Vec<String>) -> Result<Success, Error> {
     let dir_profile = ensure_storage()?;
     let mut vec_del = Vec::with_capacity(names.len());
     let mut vec_err = Vec::with_capacity(names.len());
-
-    if confirm {
-        //  TODO
-    }
 
     for name in names {
         let profile = Profile::new(name);
@@ -92,7 +88,7 @@ pub fn profile_remove(names: Vec<String>, confirm: bool) -> Result<Success, Erro
         if path.is_file() {
             match std::fs::remove_file(&path) {
                 Ok(()) => vec_del.push(profile),
-                Err(e) => vec_err.push(Error::ProfileCannotRemove(e)),
+                Err(e) => vec_err.push(Error::ProfileCannotRemove(profile, e)),
             }
         } else {
             vec_err.push(Error::ProfileNotFound(profile));

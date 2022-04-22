@@ -26,8 +26,7 @@ enum Cargo {
     #[clap(arg_required_else_help(true))]
     User {
         #[clap(subcommand)]
-        operation: Option<Op>,
-        // profile: Option<String>,
+        operation: Op,
     }
 }
 
@@ -54,11 +53,11 @@ enum Op {
     //  Equivalent to `cargo logout`?
     Clear,
     /// Delete a stored credential profile.
-    #[clap(alias = "del", alias = "remove")]
+    #[clap(alias = "del", alias = "remove", alias = "rm")]
     Delete {
-        /// Do not prompt for confirmation; delete immediately.
-        #[clap(long)]
-        noconfirm: bool,
+        // /// Do not prompt for confirmation; delete immediately.
+        // #[clap(long)]
+        // noconfirm: bool,
         /// One or more names of profiles to be deleted.
         #[clap(required(true))]
         profile: Vec<String>,
@@ -67,31 +66,101 @@ enum Op {
 
 
 fn main() {
-    let Cargo::User { operation/*, profile*/ } = Cargo::parse();
+    let Cargo::User { operation } = Cargo::parse();
 
-    // dbg!(&operation);
-    // dbg!(&profile);
-    //
-    // let operation = match operation {
-    //     Some(op) => op,
-    //     None => Op::Load { profile: profile.expect("No profile specified") },
-    // };
-
-    dbg!(&operation);
-
-    let status = match operation.unwrap() {
+    let status = match operation {
         Op::Save { force, name } => profile_save(name, force),
         Op::Load { profile } => profile_load(profile),
         Op::Clear => profile_clear(),
-        Op::Delete { noconfirm, profile } => profile_remove(profile, !noconfirm),
+        Op::Delete { profile } => profile_remove(profile),
     };
 
     match status {
-        Ok(success) => {
-            println!("{success:?}");
+        Ok(success) => match success {
+            Success::Cleared => println!("Cleared Cargo credentials."),
+            Success::Saved(p) => println!("Saved profile {:?}.", p.name()),
+            Success::Loaded(p) => println!("Loaded profile {:?}.", p.name()),
+
+            Success::Removed { removed, errors } => {
+                for err in &errors {
+                    match err {
+                        Error::ProfileNotFound(profile) => eprintln!(
+                            "Error: Cannot remove profile {:?}: Not found.",
+                            profile.name(),
+                        ),
+                        Error::ProfileCannotRemove(profile, e) => eprintln!(
+                            "Error: Cannot remove profile {:?}: {}",
+                            profile.name(), e,
+                        ),
+                        _ => unreachable!(),
+                    }
+                }
+
+                match (removed.len(), errors.len()) {
+                    (0, 0) => println!("No profiles removed."),
+                    (0, _) => {
+                        println!("Failed to remove any profiles.");
+                        exit(1);
+                    }
+                    (n_del, 0) => println!(
+                        "Removed {} {}.",
+                        n_del, if n_del == 1 { "profile" } else { "profiles" },
+                    ),
+                    (n_del, n_err) => println!(
+                        "Removed {} {} with {} {}.",
+                        n_del, if n_del == 1 { "profile" } else { "profiles" },
+                        n_err, if n_err == 1 { "error" } else { "errors" },
+                    ),
+                }
+            }
         }
         Err(error) => {
-            println!("Error: {error:?}");
+            match error {
+                Error::CannotLoad(profile, err_io) => println!(
+                    "Error: Cannot load profile {:?}: {}",
+                    profile.name(), err_io,
+                ),
+                Error::CannotSave(profile, err_io) => println!(
+                    "Error: Cannot save profile {:?}: {}",
+                    profile.name(), err_io,
+                ),
+
+                Error::CredentialsNoPath => println!(
+                    "Error: Cannot find Cargo directory.",
+                ),
+                Error::CredentialsNotFound => println!(
+                    "Error: Credentials file does not exist.",
+                ),
+                Error::CredentialsCannotRemove(err_io) => println!(
+                    "Error: Cannot remove Credentials file: {}",
+                    err_io,
+                ),
+
+                Error::ProfileExists(profile) => println!(
+                    "Error: Profile {:?} already exists.",
+                    profile.name(),
+                ),
+                Error::ProfileNotFound(profile) => println!(
+                    "Error: Profile {:?} does not exist.",
+                    profile.name(),
+                ),
+                Error::ProfileCannotRemove(profile, err_io) => println!(
+                    "Error: Cannot remove profile {:?}: {}",
+                    profile.name(), err_io,
+                ),
+
+                Error::Storage(ErrorStorage::NoPath) => println!(
+                    "Error: Cannot find a path for the profile directory.",
+                ),
+                Error::Storage(ErrorStorage::NotDir) => println!(
+                    "Error: The profile storage path is not a directory.",
+                ),
+                Error::Storage(ErrorStorage::CannotCreate(err_io)) => println!(
+                    "Error: Cannot set up the profile directory: {}",
+                    err_io,
+                ),
+            }
+
             exit(1);
         }
     }

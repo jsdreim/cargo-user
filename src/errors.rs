@@ -11,8 +11,8 @@ pub enum ErrorStorage {
 
 #[derive(Debug)]
 pub enum Error {
-    CannotLoad(std::io::Error),
-    CannotSave(std::io::Error),
+    CannotLoad(Profile, std::io::Error),
+    CannotSave(Profile, std::io::Error),
 
     CredentialsNoPath,
     CredentialsNotFound,
@@ -20,7 +20,7 @@ pub enum Error {
 
     ProfileExists(Profile),
     ProfileNotFound(Profile),
-    ProfileCannotRemove(std::io::Error),
+    ProfileCannotRemove(Profile, std::io::Error),
 
     Storage(ErrorStorage),
 }
