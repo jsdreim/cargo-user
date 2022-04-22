@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use crate::dirs::path_dir_storage;
 
 
@@ -13,6 +13,10 @@ impl Profile {
     pub fn from_filename(filename: impl AsRef<str>) -> Option<Self> {
         filename.as_ref().strip_prefix("credentials-")
             .map(|name| Self::new(name.into()))
+    }
+
+    pub fn from_path(path: impl AsRef<Path>) -> Option<Self> {
+        Self::from_filename(path.as_ref().file_name()?.to_str()?)
     }
 
     pub fn filename(&self) -> String {

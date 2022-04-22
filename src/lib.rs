@@ -11,7 +11,10 @@ pub enum Success {
     Cleared,
     Saved(Profile),
     Loaded(Profile),
-    Removed(Vec<Profile>),
+    Removed {
+        removed: Vec<Profile>,
+        errors: Vec<Error>,
+    },
 }
 
 
@@ -24,10 +27,11 @@ pub enum Error {
     CredentialsCannotClear(std::io::Error),
 
     ProfileExists(Profile),
-    ProfileNoPath,
-    ProfileNotFound,
+    ProfileNoPath(Profile),
+    ProfileNotFound(Profile),
     ProfileCannotRead(std::io::Error),
     ProfileCannotWrite(std::io::Error),
+    ProfileCannotRemove(std::io::Error),
 
     StorageNoPath,
     StorageNotDir,
@@ -56,7 +60,7 @@ pub fn ensure_storage() -> Result<PathBuf, Error> {
 pub fn profile_clear() -> Result<Success, Error> {
     match path_file_credentials() {
         Some(path_cred) => match std::fs::remove_file(path_cred) {
-            Ok(..) => Ok(Success::Cleared),
+            Ok(()) => Ok(Success::Cleared),
             Err(e) => Err(Error::CredentialsCannotClear(e)),
         }
         None => Err(Error::CredentialsNoPath),
@@ -98,8 +102,30 @@ pub fn profile_load(name: String) -> Result<Success, Error> {
 }
 
 
-pub fn profile_remove(name: Vec<String>, confirm: bool) -> Result<Success, Error> {
+pub fn profile_remove(names: Vec<String>, confirm: bool) -> Result<Success, Error> {
     let dir_profile = ensure_storage()?;
+    let mut vec_del = Vec::with_capacity(names.len());
+    let mut vec_err = Vec::with_capacity(names.len());
 
-    todo!()
+    if confirm {
+        //  TODO
+    }
+
+    for name in names {
+        let profile = Profile::new(name);
+
+        let mut path = dir_profile.clone();
+        path.push(profile.filename());
+
+        if path.is_file() {
+            match std::fs::remove_file(&path) {
+                Ok(()) => vec_del.push(profile),
+                Err(e) => vec_err.push(Error::ProfileCannotRemove(e)),
+            }
+        } else {
+            vec_err.push(Error::ProfileNotFound(profile));
+        }
+    }
+
+    Ok(Success::Removed { removed: vec_del, errors: vec_err })
 }
