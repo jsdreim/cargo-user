@@ -1,57 +1,26 @@
 pub mod dirs;
+pub mod errors;
 pub mod profile;
 
 use std::{fs::create_dir_all, path::PathBuf};
 use dirs::{path_dir_storage, path_file_credentials};
+pub use errors::{Error, ErrorStorage, Success};
 pub use profile::Profile;
 
 
-#[derive(Debug)]
-pub enum Success {
-    Cleared,
-    Saved(Profile),
-    Loaded(Profile),
-    Removed {
-        removed: Vec<Profile>,
-        errors: Vec<Error>,
-    },
-}
-
-
-#[derive(Debug)]
-pub enum Error {
-    CredentialsNoPath,
-    CredentialsNotFound,
-    CredentialsCannotRead(std::io::Error),
-    CredentialsCannotWrite(std::io::Error),
-    CredentialsCannotClear(std::io::Error),
-
-    ProfileExists(Profile),
-    ProfileNoPath(Profile),
-    ProfileNotFound(Profile),
-    ProfileCannotRead(std::io::Error),
-    ProfileCannotWrite(std::io::Error),
-    ProfileCannotRemove(std::io::Error),
-
-    StorageNoPath,
-    StorageNotDir,
-    StorageCannotCreate(std::io::Error),
-}
-
-
-pub fn ensure_storage() -> Result<PathBuf, Error> {
-    let path_dir = path_dir_storage().ok_or(Error::StorageNoPath)?;
+pub fn ensure_storage() -> Result<PathBuf, ErrorStorage> {
+    let path_dir = path_dir_storage().ok_or(ErrorStorage::NoPath)?;
 
     if path_dir.exists() {
         if path_dir.is_dir() {
             Ok(path_dir)
         } else {
-            Err(Error::StorageNotDir)
+            Err(ErrorStorage::NotDir)
         }
     } else {
         match create_dir_all(&path_dir) {
             Ok(()) => Ok(path_dir),
-            Err(e) => Err(Error::StorageCannotCreate(e)),
+            Err(e) => Err(ErrorStorage::CannotCreate(e)),
         }
     }
 }
@@ -61,7 +30,7 @@ pub fn profile_clear() -> Result<Success, Error> {
     match path_file_credentials() {
         Some(path_cred) => match std::fs::remove_file(path_cred) {
             Ok(()) => Ok(Success::Cleared),
-            Err(e) => Err(Error::CredentialsCannotClear(e)),
+            Err(e) => Err(Error::CredentialsCannotRemove(e)),
         }
         None => Err(Error::CredentialsNoPath),
     }
@@ -77,10 +46,13 @@ pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
         Err(Error::ProfileExists(profile))
     } else {
         match path_file_credentials() {
+            Some(path) if !path.is_file() => Err(Error::CredentialsNotFound),
+
             Some(path_src) => match std::fs::copy(path_src, &path_dst) {
                 Ok(..) => Ok(Success::Saved(profile)),
-                Err(e) => Err(Error::ProfileCannotWrite(e)),
+                Err(e) => Err(Error::CannotSave(e)),
             }
+
             None => Err(Error::CredentialsNoPath),
         }
     }
@@ -95,7 +67,7 @@ pub fn profile_load(name: String) -> Result<Success, Error> {
     match path_file_credentials() {
         Some(path_dst) => match std::fs::copy(path_src, &path_dst) {
             Ok(..) => Ok(Success::Loaded(profile)),
-            Err(e) => Err(Error::CredentialsCannotWrite(e)),
+            Err(e) => Err(Error::CannotLoad(e)),
         }
         None => Err(Error::CredentialsNoPath),
     }
