@@ -94,6 +94,16 @@ pub fn profile_current() -> Result<Success, Error> {
 }
 
 
+pub fn profile_find(name_opt: Option<String>) -> Result<Success, Error> {
+    let found: Result<PathBuf, ErrorStorage> = match name_opt {
+        Some(name) => Profile::new(name).path().ok_or(ErrorStorage::NoPath),
+        None => ensure_storage(),
+    };
+
+    Ok(Success::Found(found?))
+}
+
+
 pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
     let mut path_dst = ensure_storage()?;
     let profile = Profile::new(name);

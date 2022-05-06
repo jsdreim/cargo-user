@@ -40,6 +40,12 @@ enum Op {
     /// Print the name of the currently active profile.
     #[clap(alias = "whoami")]
     Current,
+    /// Print the file path to stored profiles.
+    #[clap(alias = "path")]
+    Find {
+        /// The name of a specific profile to be shown.
+        profile: Option<String>,
+    },
     /// Store the current Cargo credentials as a named profile.
     #[clap(alias = "store")]
     Save {
@@ -90,6 +96,7 @@ fn main() {
     let status = match operation {
         Op::List => profile_list(),
         Op::Current => profile_current(),
+        Op::Find { profile } => profile_find(profile),
         Op::Save { force, name } => profile_save(name, force),
         Op::Load { profile } => profile_load(profile),
         Op::Clear => profile_clear(),
@@ -125,6 +132,7 @@ fn main() {
             }
             Success::Current(_) => eprintln!("The current credentials are not \
             saved as a profile."),
+            Success::Found(path) => println!("{}", path.display()),
             Success::Cleared => println!("Cleared Cargo credentials."),
             Success::Saved(p) => println!("Saved profile {:?}.", p.name()),
             Success::Loaded(p) => println!("Loaded profile {:?}.", p.name()),

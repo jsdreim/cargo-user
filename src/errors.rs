@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::Profile;
 
 
@@ -37,6 +38,7 @@ impl From<ErrorStorage> for Error {
 pub enum Success {
     List(Vec<Profile>),
     Current(Vec<Profile>),
+    Found(PathBuf),
     Saved(Profile),
     Loaded(Profile),
     Cleared,
