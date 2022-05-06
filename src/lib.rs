@@ -2,10 +2,19 @@ pub mod dirs;
 pub mod errors;
 pub mod profile;
 
-use std::{fs::create_dir_all, path::PathBuf};
+use std::{fs::create_dir_all, io::Read, path::{Path, PathBuf}};
 use dirs::{path_dir_storage, path_file_credentials};
 pub use errors::{Error, ErrorStorage, Success};
 pub use profile::Profile;
+
+
+fn read(path: impl AsRef<Path>) -> std::io::Result<Vec<u8>> {
+    let mut data = Vec::new();
+    let mut file = std::fs::File::open(path)?;
+    file.read_to_end(&mut data)?;
+
+    Ok(data)
+}
 
 
 pub fn ensure_storage() -> Result<PathBuf, ErrorStorage> {
@@ -52,6 +61,36 @@ pub fn profile_list() -> Result<Success, Error> {
     }
 
     Ok(Success::List(profiles))
+}
+
+
+pub fn profile_current() -> Result<Success, Error> {
+    let dir_profile = ensure_storage()?;
+    let mut current = Vec::new();
+
+    match path_file_credentials() {
+        None => return Err(Error::CredentialsNoPath),
+        Some(path) if !path.is_file() => return Err(Error::CredentialsNotFound),
+
+        Some(path_src) => if let Ok(dir) = dir_profile.read_dir() {
+            let creds = read(path_src).map_err(Error::CredentialsCannotRead)?;
+
+            for entry in dir.filter_map(|e| e.ok()) {
+                let path = entry.path();
+
+                if let Some(profile) = Profile::from_path(&path) {
+                    match read(&path) {
+                        Ok(data) => if data == creds {
+                            current.push(profile);
+                        }
+                        Err(err) => return Err(Error::ProfileCannotRead(profile, err)),
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(Success::Current(current))
 }
 
 

@@ -37,6 +37,9 @@ enum Op {
     /// Print the names of all available profiles.
     #[clap(alias = "ls")]
     List,
+    /// Print the name of the currently active profile.
+    #[clap(alias = "whoami")]
+    Current,
     /// Store the current Cargo credentials as a named profile.
     #[clap(alias = "store")]
     Save {
@@ -73,6 +76,7 @@ fn main() {
 
     let status = match operation {
         Op::List => profile_list(),
+        Op::Current => profile_current(),
         Op::Save { force, name } => profile_save(name, force),
         Op::Load { profile } => profile_load(profile),
         Op::Clear => profile_clear(),
@@ -96,6 +100,15 @@ fn main() {
                     exit(1);
                 }
             }
+            Success::Current(mut profiles) if !profiles.is_empty() => {
+                profiles.sort_unstable();
+
+                for profile in profiles {
+                    println!("{}", profile.name());
+                }
+            }
+            Success::Current(_) => eprintln!("The current credentials are not \
+            saved as a profile."),
             Success::Cleared => println!("Cleared Cargo credentials."),
             Success::Saved(p) => println!("Saved profile {:?}.", p.name()),
             Success::Loaded(p) => println!("Loaded profile {:?}.", p.name()),
@@ -150,6 +163,10 @@ fn main() {
                 Error::CredentialsNotFound => println!(
                     "Error: Credentials file does not exist.",
                 ),
+                Error::CredentialsCannotRead(err_io) => println!(
+                    "Error: Cannot read Credentials file: {}",
+                    err_io,
+                ),
                 Error::CredentialsCannotRemove(err_io) => println!(
                     "Error: Cannot remove Credentials file: {}",
                     err_io,
@@ -162,6 +179,10 @@ fn main() {
                 Error::ProfileNotFound(profile) => println!(
                     "Error: Profile {:?} does not exist.",
                     profile.name(),
+                ),
+                Error::ProfileCannotRead(profile, err_io) => println!(
+                    "Error: Cannot read profile {:?}: {}",
+                    profile.name(), err_io,
                 ),
                 Error::ProfileCannotRemove(profile, err_io) => println!(
                     "Error: Cannot remove profile {:?}: {}",

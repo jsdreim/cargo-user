@@ -16,10 +16,12 @@ pub enum Error {
 
     CredentialsNoPath,
     CredentialsNotFound,
+    CredentialsCannotRead(std::io::Error),
     CredentialsCannotRemove(std::io::Error),
 
     ProfileExists(Profile),
     ProfileNotFound(Profile),
+    ProfileCannotRead(Profile, std::io::Error),
     ProfileCannotRemove(Profile, std::io::Error),
 
     Storage(ErrorStorage),
@@ -33,6 +35,7 @@ impl From<ErrorStorage> for Error {
 #[derive(Debug)]
 pub enum Success {
     List(Vec<Profile>),
+    Current(Vec<Profile>),
     Saved(Profile),
     Loaded(Profile),
     Cleared,
