@@ -105,7 +105,7 @@ pub fn profile_save(name: String, clobber: bool) -> Result<Success, Error> {
         match path_file_credentials() {
             Some(path) if !path.is_file() => Err(Error::CredentialsNotFound),
 
-            Some(path_src) => match std::fs::copy(path_src, &path_dst) {
+            Some(path_src) => match std::fs::copy(path_src, path_dst) {
                 Ok(..) => Ok(Success::Saved(profile)),
                 Err(e) => Err(Error::CannotSave(profile, e)),
             }
@@ -122,11 +122,36 @@ pub fn profile_load(name: String) -> Result<Success, Error> {
     path_src.push(profile.filename());
 
     match path_file_credentials() {
-        Some(path_dst) => match std::fs::copy(path_src, &path_dst) {
+        Some(path_dst) => match std::fs::copy(path_src, path_dst) {
             Ok(..) => Ok(Success::Loaded(profile)),
             Err(e) => Err(Error::CannotLoad(profile, e)),
         }
         None => Err(Error::CredentialsNoPath),
+    }
+}
+
+
+pub fn profile_rename(
+    name_old: String,
+    name_new: String,
+    clobber: bool,
+) -> Result<Success, Error> {
+    let mut path_src = ensure_storage()?;
+    let mut path_dst = path_src.clone();
+
+    let old = Profile::new(name_old);
+    path_src.push(old.filename());
+
+    let new = Profile::new(name_new);
+    path_dst.push(new.filename());
+
+    if !clobber && path_dst.exists() {
+        Err(Error::ProfileExists(new))
+    } else {
+        match std::fs::rename(path_src, path_dst) {
+            Ok(..) => Ok(Success::Renamed(old, new)),
+            Err(e) => Err(Error::ProfileCannotRename(old, new, e)),
+        }
     }
 }
 

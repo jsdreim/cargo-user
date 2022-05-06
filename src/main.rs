@@ -55,6 +55,19 @@ enum Op {
         /// The name of the profile to be loaded.
         profile: String,
     },
+    /// Change the name of a profile.
+    #[clap(alias = "mv")]
+    Rename {
+        /// Overwrite the destination if it already exists.
+        #[clap(long, short)]
+        force: bool,
+        /// The current name of the profile to be renamed.
+        #[clap(name = "PROFILE")]
+        name_old: String,
+        /// A new name for the profile.
+        #[clap(name = "NAME")]
+        name_new: String,
+    },
     /// Clear the currently active credentials.
     //  Equivalent to `cargo logout`?
     Clear,
@@ -80,6 +93,9 @@ fn main() {
         Op::Save { force, name } => profile_save(name, force),
         Op::Load { profile } => profile_load(profile),
         Op::Clear => profile_clear(),
+        Op::Rename { force, name_old, name_new } => profile_rename(
+            name_old, name_new, force,
+        ),
         Op::Delete { profile } => profile_remove(profile),
     };
 
@@ -112,6 +128,11 @@ fn main() {
             Success::Cleared => println!("Cleared Cargo credentials."),
             Success::Saved(p) => println!("Saved profile {:?}.", p.name()),
             Success::Loaded(p) => println!("Loaded profile {:?}.", p.name()),
+
+            Success::Renamed(old, new) => println!(
+                "Profile {:?} renamed to {:?}.",
+                old.name(), new.name(),
+            ),
 
             Success::Removed { removed, errors } => {
                 for err in &errors {
@@ -187,6 +208,10 @@ fn main() {
                 Error::ProfileCannotRemove(profile, err_io) => println!(
                     "Error: Cannot remove profile {:?}: {}",
                     profile.name(), err_io,
+                ),
+                Error::ProfileCannotRename(old, new, err_io) => println!(
+                    "Error: Cannot rename profile {:?} to {:?}: {}",
+                    old.name(), new.name(), err_io,
                 ),
 
                 Error::Storage(ErrorStorage::NoPath) => println!(

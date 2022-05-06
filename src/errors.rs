@@ -23,6 +23,7 @@ pub enum Error {
     ProfileNotFound(Profile),
     ProfileCannotRead(Profile, std::io::Error),
     ProfileCannotRemove(Profile, std::io::Error),
+    ProfileCannotRename(Profile, Profile, std::io::Error),
 
     Storage(ErrorStorage),
 }
@@ -39,6 +40,7 @@ pub enum Success {
     Saved(Profile),
     Loaded(Profile),
     Cleared,
+    Renamed(Profile, Profile),
     Removed {
         removed: Vec<Profile>,
         errors: Vec<Error>,
