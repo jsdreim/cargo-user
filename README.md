@@ -21,7 +21,7 @@ As long as `$HOME/.cargo/bin/` is included in `$PATH`, the subcommand should be 
 
 ## Usage
 
-Assuming you have already run `cargo login`, you should first run `cargo user save` to save your credentials a profile. You can then clear your credentials with `cargo logout` or `cargo user clear`, log in again with different credentials, and save those too.
+Assuming you have already run `cargo login`, you should first run `cargo user save` to save your credentials as a profile. You can then clear your credentials with `cargo logout` or `cargo user clear`, log in again with different credentials, and save those too.
 
 ```bash
 cargo user save first
