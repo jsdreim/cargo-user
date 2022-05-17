@@ -65,32 +65,35 @@ pub fn profile_list() -> Result<Success, Error> {
 
 
 pub fn profile_current() -> Result<Success, Error> {
-    let dir_profile = ensure_storage()?;
-    let mut current = Vec::new();
-
     match path_file_credentials() {
-        None => return Err(Error::CredentialsNoPath),
-        Some(path) if !path.is_file() => return Ok(Success::CurrentNone),
+        None => Err(Error::CredentialsNoPath),
+        Some(path) if !path.is_file() => Ok(Success::CurrentNone),
 
-        Some(path_src) => if let Ok(dir) = dir_profile.read_dir() {
-            let creds = read(path_src).map_err(Error::CredentialsCannotRead)?;
+        Some(path) => {
+            let mut current = Vec::new();
 
-            for entry in dir.filter_map(|e| e.ok()) {
-                let path = entry.path();
+            if let Ok(dir) = ensure_storage()?.read_dir() {
+                let creds = read(path).map_err(Error::CredentialsCannotRead)?;
 
-                if let Some(profile) = Profile::from_path(&path) {
-                    match read(&path) {
-                        Ok(data) => if data == creds {
-                            current.push(profile);
+                for entry in dir.filter_map(Result::ok) {
+                    let path = entry.path();
+
+                    if let Some(profile) = Profile::from_path(&path) {
+                        match read(&path) {
+                            Ok(data) => if data == creds {
+                                current.push(profile);
+                            }
+                            Err(err) => {
+                                return Err(Error::ProfileCannotRead(profile, err));
+                            }
                         }
-                        Err(err) => return Err(Error::ProfileCannotRead(profile, err)),
                     }
                 }
             }
+
+            Ok(Success::Current(current))
         }
     }
-
-    Ok(Success::Current(current))
 }
 
 
