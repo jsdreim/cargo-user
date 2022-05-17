@@ -38,6 +38,7 @@ impl From<ErrorStorage> for Error {
 pub enum Success {
     List(Vec<Profile>),
     Current(Vec<Profile>),
+    CurrentNone,
     Found(PathBuf),
     Saved(Profile),
     Loaded(Profile),

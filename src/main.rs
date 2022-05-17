@@ -132,6 +132,7 @@ fn main() {
             }
             Success::Current(_) => eprintln!("The current credentials are not \
             saved as a profile."),
+            Success::CurrentNone => eprintln!("No active credentials found."),
             Success::Found(path) => println!("{}", path.display()),
             Success::Cleared => println!("Cleared Cargo credentials."),
             Success::Saved(p) => println!("Saved profile {:?}.", p.name()),

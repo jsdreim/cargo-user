@@ -70,7 +70,7 @@ pub fn profile_current() -> Result<Success, Error> {
 
     match path_file_credentials() {
         None => return Err(Error::CredentialsNoPath),
-        Some(path) if !path.is_file() => return Err(Error::CredentialsNotFound),
+        Some(path) if !path.is_file() => return Ok(Success::CurrentNone),
 
         Some(path_src) => if let Ok(dir) = dir_profile.read_dir() {
             let creds = read(path_src).map_err(Error::CredentialsCannotRead)?;

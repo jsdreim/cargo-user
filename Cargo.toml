@@ -1,7 +1,7 @@
 [package]
 name = "cargo-user"
 description = "A Cargo plugin for managing multiple sets of credentials."
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 authors = ["JS Dreim <jsdreim@protonmail.com>"]
